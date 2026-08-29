@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-trace"
+version = "0.1.0"
+description = "Zero-dependency tracer for LLM agents: nested spans, tool calls, tokens, cost."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "vk-ai" }]
+keywords = ["llm", "agents", "observability", "tracing"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: System :: Logging",
+]
+[project.urls]
+Homepage = "https://github.com/vk-ai/agent-trace"
+Issues = "https://github.com/vk-ai/agent-trace/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_trace"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/agent_trace" = "agent_trace"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

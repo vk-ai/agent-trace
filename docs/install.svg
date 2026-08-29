@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Install agent-trace">
+  <rect width="960" height="540" fill="#f4efe6"/>
+  <text x="48" y="56" font-family="Georgia, serif" font-size="28" fill="#1c1917">Install</text>
+  <rect x="48" y="88" width="400" height="380" rx="16" fill="#fff" stroke="#1c1917" stroke-width="1.5"/>
+  <text x="72" y="128" font-family="Georgia, serif" font-size="20" fill="#1c1917">New project</text>
+  <text x="72" y="168" font-family="ui-monospace, monospace" font-size="14" fill="#44403c">python -m venv .venv</text>
+  <text x="72" y="196" font-family="ui-monospace, monospace" font-size="14" fill="#44403c">source .venv/bin/activate</text>
+  <text x="72" y="224" font-family="ui-monospace, monospace" font-size="14" fill="#44403c">pip install -e ".[dev]"</text>
+  <text x="72" y="252" font-family="ui-monospace, monospace" font-size="14" fill="#44403c">pytest</text>
+  <text x="72" y="280" font-family="ui-monospace, monospace" font-size="14" fill="#44403c">python examples/quickstart.py</text>
+  <text x="72" y="340" font-family="Georgia, serif" font-size="14" fill="#78716c">Clone the repo. Editable install.</text>
+  <text x="72" y="364" font-family="Georgia, serif" font-size="14" fill="#78716c">CI is GitHub Actions on 3.10 and 3.12.</text>
+  <rect x="512" y="88" width="400" height="380" rx="16" fill="#1c1917"/>
+  <text x="536" y="128" font-family="Georgia, serif" font-size="20" fill="#f4efe6">Existing project</text>
+  <text x="536" y="176" font-family="ui-monospace, monospace" font-size="14" fill="#c4a574">pip install agent-trace</text>
+  <text x="536" y="220" font-family="ui-monospace, monospace" font-size="13" fill="#f4efe6">from agent_trace import Tracer</text>
+  <text x="536" y="248" font-family="ui-monospace, monospace" font-size="13" fill="#f4efe6">t = Tracer("run_01", model="grok")</text>
+  <text x="536" y="276" font-family="ui-monospace, monospace" font-size="13" fill="#f4efe6">with t.span("answer", "llm") as s:</text>
+  <text x="536" y="304" font-family="ui-monospace, monospace" font-size="13" fill="#f4efe6">    t.tokens(s, 120, 40)</text>
+  <text x="536" y="360" font-family="Georgia, serif" font-size="14" fill="#a8a29e">Zero dependencies. Drop next to the loop.</text>
+</svg>

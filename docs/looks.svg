@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="agent-trace nested spans">
+  <rect width="960" height="540" fill="#f4efe6"/>
+  <text x="48" y="56" font-family="Georgia, serif" font-size="28" fill="#1c1917">What a run looks like</text>
+  <text x="48" y="86" font-family="ui-monospace, monospace" font-size="13" fill="#78716c">t.summary() after one nested tool call</text>
+  <rect x="48" y="120" width="864" height="88" rx="12" fill="#1c1917"/>
+  <text x="72" y="156" font-family="ui-monospace, monospace" font-size="16" fill="#f4efe6">run_01  ·  grok  ·  2 spans  ·  0 errors</text>
+  <text x="72" y="186" font-family="ui-monospace, monospace" font-size="14" fill="#c4a574">tokens 120 / 40   cost $0.00096   latency 40ms</text>
+  <rect x="80" y="236" width="800" height="64" rx="10" fill="#fff" stroke="#1c1917" stroke-width="1.5"/>
+  <text x="104" y="276" font-family="ui-monospace, monospace" font-size="16" fill="#1c1917">llm  answer</text>
+  <text x="720" y="276" font-family="ui-monospace, monospace" font-size="14" fill="#78716c">40ms</text>
+  <rect x="120" y="316" width="720" height="64" rx="10" fill="#fff" stroke="#c4a574" stroke-width="1.5"/>
+  <text x="144" y="356" font-family="ui-monospace, monospace" font-size="16" fill="#1c1917">tool  search</text>
+  <text x="720" y="356" font-family="ui-monospace, monospace" font-size="14" fill="#78716c">child of answer</text>
+  <text x="48" y="510" font-family="Georgia, serif" font-size="14" fill="#78716c">Clock and IdFactory are injected. Tests never sleep.</text>
+</svg>
