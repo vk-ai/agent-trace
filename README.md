@@ -49,6 +49,43 @@ with t.span("answer", "llm") as span:
 print(t.summary())
 ```
 
+## Stop runaways before they spend
+
+Tracing records cost after the fact. Attach a **Budget** so the next LLM/tool
+call is refused *before* the side effect:
+
+```python
+from agent_trace import Budget, BudgetExceeded, Tracer
+
+t = Tracer(
+    "run_01",
+    model="grok",
+    usd_per_1k_in=0.003,
+    usd_per_1k_out=0.015,
+    budget=Budget(
+        max_tokens=8_000,
+        max_cost_usd=0.05,
+        max_steps=12,
+        allowed_tools=frozenset({"web", "retriever"}),
+    ),
+)
+
+with t.span("answer", "llm") as span:
+    t.reserve_tokens(120, 40)          # gate tokens + implied USD first
+    # ... call the model ...
+    t.tokens(span, 120, 40)            # record usage on the span
+
+try:
+    with t.span("hack", "tool", tool="shell"):
+        pass
+except BudgetExceeded as exc:
+    print(exc.reason, exc.requested)   # tool / shell
+```
+
+`reserve_tokens` / `authorize_tool` / step checks are atomic: a rejected call
+does not mutate the gate. `t.summary()["budget"]` shows limits and consumption.
+Standalone `BudgetGate` works without a Tracer when you only need policy.
+
 ## What it looks like
 
 `t.summary()` prints:

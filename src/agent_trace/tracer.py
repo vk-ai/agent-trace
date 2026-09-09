@@ -7,6 +7,7 @@ from contextvars import ContextVar
 from dataclasses import asdict
 from typing import Any, Iterator
 
+from .budget import Budget, BudgetGate
 from .types import Clock, IdFactory, Kind, Span
 
 _CURRENT: ContextVar[str | None] = ContextVar("agent_trace_span", default=None)
@@ -36,6 +37,7 @@ class Tracer:
         usd_per_1k_out: float = 0.0,
         clock: Clock | None = None,
         ids: IdFactory | None = None,
+        budget: Budget | None = None,
     ) -> None:
         self.run_id = run_id
         self.model = model
@@ -44,9 +46,25 @@ class Tracer:
         self._clock = clock or _WallClock()
         self._ids = ids or _UuidFactory()
         self.spans: list[Span] = []
+        self.gate: BudgetGate | None = (
+            BudgetGate(
+                budget,
+                usd_per_1k_in=usd_per_1k_in,
+                usd_per_1k_out=usd_per_1k_out,
+            )
+            if budget is not None
+            else None
+        )
 
     @contextmanager
     def span(self, name: str, kind: Kind = "chain", **attrs: Any) -> Iterator[Span]:
+        if self.gate is not None:
+            # Policy checks before consuming a step slot so rejections are atomic.
+            if kind == "tool":
+                tool = attrs.get("tool")
+                if tool is not None:
+                    self.gate.authorize_tool(str(tool))
+            self.gate.authorize_step()
         parent = _CURRENT.get()
         record = Span(
             name=name,
@@ -67,6 +85,18 @@ class Tracer:
             self.spans.append(record)
             _CURRENT.reset(token)
 
+    def reserve_tokens(self, prompt: int, completion: int = 0) -> None:
+        """Reserve estimated tokens/cost on the attached gate before an LLM call."""
+        if self.gate is None:
+            raise RuntimeError("Tracer has no budget gate; pass budget=Budget(...)")
+        self.gate.reserve_tokens(prompt, completion)
+
+    def authorize_tool(self, tool: str) -> None:
+        """Authorize a tool on the attached gate before invoking it."""
+        if self.gate is None:
+            raise RuntimeError("Tracer has no budget gate; pass budget=Budget(...)")
+        self.gate.authorize_tool(tool)
+
     def tokens(self, span: Span, prompt: int, completion: int) -> None:
         span.tokens_in += prompt
         span.tokens_out += completion
@@ -77,7 +107,7 @@ class Tracer:
         return (tin / 1000) * self.usd_per_1k_in + (tout / 1000) * self.usd_per_1k_out
 
     def summary(self) -> dict[str, Any]:
-        return {
+        payload = {
             "run_id": self.run_id,
             "model": self.model,
             "spans": len(self.spans),
@@ -87,6 +117,9 @@ class Tracer:
             "cost_usd": round(self.cost_usd(), 6),
             "latency_ms": round(sum(s.latency_ms for s in self.spans if s.parent_id is None), 2),
         }
+        if self.gate is not None:
+            payload["budget"] = self.gate.snapshot()
+        return payload
 
     def export(self) -> dict[str, Any]:
         return {
