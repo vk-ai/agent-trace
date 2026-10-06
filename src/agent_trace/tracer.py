@@ -58,13 +58,22 @@ class Tracer:
 
     @contextmanager
     def span(self, name: str, kind: Kind = "chain", **attrs: Any) -> Iterator[Span]:
+        """Open a span. Tool spans pass ``tool=`` and optionally ``args=``.
+
+        With a budget, tool policy, loop checks and the step budget all run
+        before the span starts; a refused span records nothing.
+        """
+        tool: str | None = None
+        args = attrs.get("args")
         if self.gate is not None:
             # Policy checks before consuming a step slot so rejections are atomic.
-            if kind == "tool":
-                tool = attrs.get("tool")
-                if tool is not None:
-                    self.gate.authorize_tool(str(tool))
+            if kind == "tool" and attrs.get("tool") is not None:
+                tool = str(attrs["tool"])
+                self.gate.authorize_tool(tool)
+                self.gate.check_call(tool, args)
             self.gate.authorize_step()
+            if tool is not None:
+                self.gate.record_call(tool, args)
         parent = _CURRENT.get()
         record = Span(
             name=name,
@@ -79,6 +88,8 @@ class Tracer:
             yield record
         except Exception as exc:
             record.error = f"{type(exc).__name__}: {exc}"
+            if self.gate is not None and tool is not None:
+                self.gate.record_error(tool, args, exc)
             raise
         finally:
             record.ended_ms = self._clock.now_ms()
@@ -96,6 +107,12 @@ class Tracer:
         if self.gate is None:
             raise RuntimeError("Tracer has no budget gate; pass budget=Budget(...)")
         self.gate.authorize_tool(tool)
+
+    def observe_state(self, state: Any) -> bool:
+        """Report agent state for the no-progress guard. True if it changed."""
+        if self.gate is None:
+            raise RuntimeError("Tracer has no budget gate; pass budget=Budget(...)")
+        return self.gate.observe_state(state)
 
     def tokens(self, span: Span, prompt: int, completion: int) -> None:
         span.tokens_in += prompt

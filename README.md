@@ -86,6 +86,42 @@ except BudgetExceeded as exc:
 does not mutate the gate. `t.summary()["budget"]` shows limits and consumption.
 Standalone `BudgetGate` works without a Tracer when you only need policy.
 
+## Catch stuck loops (repeat / no-progress guard)
+
+A step cap only delays a stuck agent. The same `Budget` can refuse the call
+that repeats a loop, before it runs:
+
+```python
+from agent_trace import Budget, BudgetExceeded, Tracer
+
+t = Tracer("run_02", budget=Budget(
+    max_steps=50,
+    max_repeat=3,                 # 4th identical tool call in a row → refused
+    max_repeat_errors=2,          # same call failing the same way twice → refused
+    max_no_progress=5,            # 5 steps with unchanged state → refused
+    volatile_keys=frozenset({"request_id", "ts"}),  # ignored when comparing args
+))
+
+try:
+    with t.span("search", "tool", tool="web", args={"q": "weather", "request_id": 7}):
+        ...                       # dispatch the tool here
+    t.observe_state({"facts": facts, "plan": plan})   # whatever "progress" means for you
+except BudgetExceeded as exc:
+    print(exc.reason, exc)        # loop / no_progress, with a readable reason
+```
+
+- Calls are compared by `(tool, args)` after dropping `volatile_keys` at any
+  depth. LLM turns between two identical tool calls do not reset the streak.
+- Failures are compared after normalizing numbers, hex ids and whitespace, so
+  "timeout after 30s (req 0xab12)" and "timeout after 31s (req 0xcd34)" match.
+  A failing tool span records its error automatically.
+- `max_no_progress` turns on after the first `observe_state(...)`.
+- Refusals are atomic, like the other gates. `t.summary()["budget"]["loop"]`
+  reports the streak, the worst repeated error count and the steps since the
+  last state change. Every guard is off by default.
+
+See [`examples/loop_guard.py`](examples/loop_guard.py).
+
 ## What it looks like
 
 `t.summary()` prints:
